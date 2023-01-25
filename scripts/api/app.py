@@ -26,8 +26,6 @@ from pydantic import BaseModel
 class NerdInput(BaseModel):
     text: str
     entity_spans: List[int]
-    k: int
-    lang: str = "en"
 
 
 max_context_length = 64
