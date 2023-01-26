@@ -5,12 +5,9 @@ import requests
 from typing import Optional, List
 import pandas as pd
 import argparse
-import logging
 
 WIKIPEDIA_URL="https://en.wikipedia.org/w/api.php"
 WIKIDATA_URL="https://www.wikidata.org/w/api.php"
-
-logger = logging.getLogger()
 
 
 def new_entity_line(title: str, text: str, types_attempt: str, entity_types: List[str], page_id: int, kb_idx: str):
@@ -41,6 +38,7 @@ def entity_types_label(wikidata_id: str) -> str:
     payload = r.json()
     # P31 is the attribute -instance of-
     instance_type_label = payload["entities"][wikidata_id]["labels"]["en"]["value"]
+
     
     return instance_type_label      
       
@@ -101,30 +99,40 @@ def query_and_parse_wikidata_api(page_id) -> Optional[dict]:
         text = item["extract"]
         title = item["title"]
         type_attempt = get_entity_type_from_claims(wikidata_id)
+        
+            
+        # We try to filter wikimedia category pages and wikimedia disambiguation pages
+        if("Wikimedia" in type_attempt or text == "" or title == ""):
+            return None
               
         return new_entity_line(title, text, type_attempt, [], page_id, wikidata_id)         
         
         
     except Exception as e:
-        print(e)    
+        print(e)
+        print(payload)    
     
  
 def main(args):
     data = []
     start = args.id_start
     entities_count = 0
+    count = 0
     while(entities_count < args.entities_count):
-        id = start + entities_count
-        logger.info(f"Querying wikidata page {id}")
+        id = start + count
+        print(f"Querying wikidata page {id}")
         maybe_entity = query_and_parse_wikidata_api(id)
         if(maybe_entity is not None):
             entity_title = maybe_entity["title"]
-            logger.info(f"Found entity {entity_title}")
+            print(f"Found entity {entities_count}/{args.entities_count} {entity_title}")
             data.append(maybe_entity)
             entities_count += 1
             
+        count += 1
+            
     df = pd.DataFrame(data)
-    df.to_json(path_or_buf=args.output_file, orient='records', lines=True)
+    with open(args.output_file, 'w', encoding='utf-8') as file:
+        df.to_json(file, force_ascii=False, orient='records', lines=True)
         
         
 
