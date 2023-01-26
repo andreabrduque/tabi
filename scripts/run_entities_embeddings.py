@@ -32,7 +32,7 @@ distributed = False
 
 # set paths
 home_dir = "tabi"
-data_dir = f"data"
+data_dir = "data"
 train_file = "train.jsonl"
 dev_file = "dev.jsonl"
 test_file = "dev.jsonl"
@@ -40,11 +40,10 @@ entity_file = "entity_append.jsonl"
 type_file = "figer_types.txt"
 
 base_log_dir = "logs"
-run_name = f"sample_run"
+run_name = "sample_run"
 
 log_dir = f"{base_log_dir}/{run_name}"
 
-train_model=False
 preprocess = True
 tokenized_entity_data = f"{log_dir}/1_preprocess/entity_data.npy"
 
