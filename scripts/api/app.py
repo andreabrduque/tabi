@@ -47,7 +47,6 @@ def get_inputs(text, char_spans):
     tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
     tokenizer.add_special_tokens({"additional_special_tokens": [ENT_START, MENTION_START, MENTION_END]})
 
-
     context_tokens = data_utils.get_context_window(
         char_spans=char_spans,
         tokenizer=tokenizer,
