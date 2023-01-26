@@ -1,19 +1,17 @@
 #do one by one
 
-import concurrent.futures
 import requests
 
 from typing import Optional, List
+import pandas as pd
+import argparse
+import logging
 
+WIKIPEDIA_URL="https://en.wikipedia.org/w/api.php"
+WIKIDATA_URL="https://www.wikidata.org/w/api.php"
 
+logger = logging.getLogger()
 
-#https://en.wikipedia.org/w/api.php?action=query&prop=pageprops|extracts&pageids=61421301&exsentences=10&exlimit=1&explaintext=1&formatversion=2
-
-#if no extract and no pageprops, save thingie
-#get claims with #https://www.wikidata.org/w/api.php?action=wbgetclaims&entity=Q180736&formatversion=2
-#extract P31
-
-LAST_KILT_E_WIKIPEDIA_ID = 61421301
 
 def new_entity_line(title: str, text: str, types_attempt: str, entity_types: List[str], page_id: int, kb_idx: str):
     return {
@@ -27,12 +25,19 @@ def new_entity_line(title: str, text: str, types_attempt: str, entity_types: Lis
     }
     
     
-def entity_types_label(wikidata_id: str) -> str:
-    get_entities_endpoint = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={wikidata_id}&props=labels&sitefilter=azwiki&formatversion=2&languages=en&format=json"
+def entity_types_label(wikidata_id: str) -> str:     
+    r = requests.get(WIKIDATA_URL,
+                 params = {
+                     "action": "wbgetentities",
+                     "format": "json",
+                     "ids": wikidata_id,
+                     "props": "labels",
+                     "sitefilter": "azwiki",
+                     "formatversion": 2,
+                     "languages": "en"
+                 }
+            )  
       
-    r = requests.get(
-            get_entities_endpoint
-        )
     payload = r.json()
     # P31 is the attribute -instance of-
     instance_type_label = payload["entities"][wikidata_id]["labels"]["en"]["value"]
@@ -41,12 +46,18 @@ def entity_types_label(wikidata_id: str) -> str:
       
     
     
-def get_entity_type_from_claims(wikidata_id: str) -> Optional[str]:
-    claims_endpoint = f"https://www.wikidata.org/w/api.php?action=wbgetclaims&entity={wikidata_id}&formatversion=2&format=json"
+def get_entity_type_from_claims(wikidata_id: str) -> Optional[str]:   
+    r = requests.get(WIKIDATA_URL,
+                 params = {
+                     "action": "wbgetclaims",
+                     "format": "json",
+                     "entity": wikidata_id,
+                     "sitefilter": "azwiki",
+                     "formatversion": 2,
+                 }
+            )  
     
-    r = requests.get(
-        claims_endpoint
-    )
+    
     payload = r.json()
     # P31 is the attribute -instance of-
     instance_type_id = payload["claims"]["P31"][0]["mainsnak"]["datavalue"]["value"]["id"]
@@ -58,13 +69,22 @@ def get_entity_type_from_claims(wikidata_id: str) -> Optional[str]:
     
 
 #Get data from Wikidatas API
-def query_and_parse_wikidata_api(page_id) -> Optional[dict]:
-    query_endpoint = f"https://en.wikipedia.org/w/api.php?action=query&prop=pageprops|extracts&pageids={page_id}&exsentences=10&exlimit=1&explaintext=1&formatversion=2&format=json"
-    
+def query_and_parse_wikidata_api(page_id) -> Optional[dict]:   
     try:
-        r = requests.get(
-            query_endpoint
-        )
+        r = requests.get(WIKIPEDIA_URL,
+                 params = {
+                     "action": "query",
+                     "format": "json",
+                     "prop": "pageprops|extracts",
+                     "exsentences": 10,
+                     "exlimit": 1,
+                     "explaintext": 1,
+                     "formatversion": 2,
+                     "pageids": page_id,
+                     "sitefilter": "azwiki",
+                     "formatversion": 2,
+                 }
+        )  
         payload = r.json()
         pages = payload["query"]["pages"]
         
@@ -88,7 +108,33 @@ def query_and_parse_wikidata_api(page_id) -> Optional[dict]:
     except Exception as e:
         print(e)    
     
-    
+ 
+def main(args):
+    data = []
+    start = args.id_start
+    entities_count = 0
+    while(entities_count < args.entities_count):
+        id = start + entities_count
+        logger.info(f"Querying wikidata page {id}")
+        maybe_entity = query_and_parse_wikidata_api(id)
+        if(maybe_entity is not None):
+            entity_title = maybe_entity["title"]
+            logger.info(f"Found entity {entity_title}")
+            data.append(maybe_entity)
+            entities_count += 1
+            
+    df = pd.DataFrame(data)
+    df.to_json(path_or_buf=args.output_file, orient='records', lines=True)
+        
+        
+
 if __name__ == "__main__":
-    print(query_and_parse_wikidata_api(61421301))
-    
+    # add arguments specific to entity extraction to parser
+    parser = argparse.ArgumentParser(add_help=False)
+    parser_args = parser.add_argument_group("parser_args")
+    parser_args.add_argument("--output_file", type=str, required=True)
+    parser_args.add_argument("--id_start", type=int, default=61421302)
+    parser_args.add_argument("--entities_count", type=int, default=10)
+
+    args = parser.parse_args()
+    main(args)
