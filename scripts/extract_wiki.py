@@ -119,7 +119,7 @@ def main(args):
             data.append(maybe_entity)
             entities_count += 1
 
-            if (len(data) % 1 == 0):
+            if (len(data) % 1000 == 0):
                 df = pd.DataFrame(data)
 
                 with open(args.output_file, 'a', encoding='utf-8', ) as file:

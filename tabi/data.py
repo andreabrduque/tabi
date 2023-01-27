@@ -70,36 +70,37 @@ class EntityDataset(torch.utils.data.Dataset):
                 shape=len(self.entity_ids),
                 dtype=utils.get_mmap_type(max_entity_length),
             )
-
+            
+            # Only if we have types
             # map all types to a read only numpy array
-            if not os.path.exists(data_utils.get_prepped_type_file(entity_path)):
-                self.all_one_hot_types = np.zeros(
-                    (len(self.entity_ids), len(self.all_types))
-                )
-                for e in self.entity_cache:
-                    ent_typeids = [
-                        self.type_vocab[t] for t in self.entity_cache[e]["types"]
-                    ]
-                    if len(ent_typeids) > 0:
-                        row_id = self.eid2row[e]
-                        self.all_one_hot_types[row_id] = torch.sum(
-                            F.one_hot(
-                                torch.tensor(ent_typeids),
-                                num_classes=len(self.all_types),
-                            ),
-                            dim=0,
-                        )
-                type_mmap = np.memmap(
-                    data_utils.get_prepped_type_file(entity_path),
-                    mode="w+",
-                    shape=self.all_one_hot_types.shape,
-                )
-                type_mmap[:] = self.all_one_hot_types
-            else:
-                self.all_one_hot_types = np.memmap(
-                    data_utils.get_prepped_type_file(entity_path), mode="r"
-                ).reshape(len(self.entity_ids), len(self.all_types))
-            self.all_one_hot_types.flags.writeable = False
+            # if not os.path.exists(data_utils.get_prepped_type_file(entity_path)):
+            #     self.all_one_hot_types = np.zeros(
+            #         (len(self.entity_ids), len(self.all_types))
+            #     )
+            #     for e in self.entity_cache:
+            #         ent_typeids = [
+            #             self.type_vocab[t] for t in self.entity_cache[e]["types"]
+            #         ]
+            #         if len(ent_typeids) > 0:
+            #             row_id = self.eid2row[e]
+            #             self.all_one_hot_types[row_id] = torch.sum(
+            #                 F.one_hot(
+            #                     torch.tensor(ent_typeids),
+            #                     num_classes=len(self.all_types),
+            #                 ),
+            #                 dim=0,
+            #             )
+            #     type_mmap = np.memmap(
+            #         data_utils.get_prepped_type_file(entity_path),
+            #         mode="w+",
+            #         shape=self.all_one_hot_types.shape,
+            #     )
+            #     type_mmap[:] = self.all_one_hot_types
+            # else:
+            #     self.all_one_hot_types = np.memmap(
+            #         data_utils.get_prepped_type_file(entity_path), mode="r"
+            #     ).reshape(len(self.entity_ids), len(self.all_types))
+            # self.all_one_hot_types.flags.writeable = False
 
             # no longer need entity cache
             self.entity_cache = None

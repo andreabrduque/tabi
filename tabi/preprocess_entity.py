@@ -13,6 +13,7 @@ from tabi.config import parser
 from tabi.data import EntityDataset
 from tabi.utils.train_utils import set_random_seed
 from tabi.utils.utils import get_mmap_type, log_setup, save_entity_map, set_device
+from typing import Optional
 
 torch.multiprocessing.set_sharing_strategy("file_system")
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
@@ -35,7 +36,7 @@ def main(args):
         add_entity_type_in_description=args.add_entity_type_in_description,
         max_entity_length=args.max_entity_length,
         tokenizer_name=args.tokenizer_name,
-        type_path=args.type_file,
+        #type_path=args.type_file,
     )
     dataloader = DataLoader(
         dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=False
@@ -78,5 +79,6 @@ if __name__ == "__main__":
     entity_args.add_argument(
         "--entity_memmap_file", type=str, default="entity_data.npy"
     )
+    entity_args.add_argument("--device", type=str, default="gpu")
     args = parser.parse_args()
     main(args)

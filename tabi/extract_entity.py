@@ -44,7 +44,7 @@ def main(args):
         max_entity_length=args.max_entity_length,
         tokenized_entity_data=args.tokenized_entity_data,
         tokenizer_name=args.tokenizer_name,
-        type_path=args.type_file,
+        #type_path=args.type_file,
     )
     dataloader = DataLoader(
         dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=False
@@ -110,5 +110,6 @@ if __name__ == "__main__":
         type=str,
         help="File path for memory mapped entity data",
     )
+    entity_args.add_argument("--device", type=str, default="gpu")
     args = parser.parse_args()
     main(args)
