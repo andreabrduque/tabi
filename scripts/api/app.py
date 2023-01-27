@@ -1,8 +1,5 @@
-import argparse
 import logging
-from collections import defaultdict
 
-from string import punctuation
 import torch
 from termcolor import colored
 from transformers import AutoTokenizer
@@ -15,13 +12,10 @@ from tabi.utils.utils import load_model, move_dict
 import tabi.utils.data_utils as data_utils
 from typing import Dict, List
 
-#API
-
-import logging
 from typing import Any
-from fastapi import Depends, FastAPI
-from typing import List, Tuple
+from fastapi import FastAPI
 from pydantic import BaseModel
+
 
 class NerdInput(BaseModel):
     text: str
@@ -30,9 +24,9 @@ class NerdInput(BaseModel):
 
 max_context_length = 64
 top_k = 5
-entity_emb_path = "/Users/andrea/Documents/Workspace/tabi/data/embs.npy"
+entity_emb_path = "/Users/andrea/Documents/Workspace/tabi/data/embs_new.npy"
 model_checkpoint = "/Users/andrea/Documents/Workspace/tabi/data/best_model.pth"
-entity_file = "/Users/andrea/Documents/Workspace/tabi/data/entity.pkl"
+entity_file = "/Users/andrea/Documents/Workspace/tabi/data/merged_entity.pkl"
 device = "cpu"
 
 hf_logging.set_verbosity_error()
@@ -43,9 +37,11 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
 
+
 def get_inputs(text, char_spans):
     tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
-    tokenizer.add_special_tokens({"additional_special_tokens": [ENT_START, MENTION_START, MENTION_END]})
+    tokenizer.add_special_tokens(
+        {"additional_special_tokens": [ENT_START, MENTION_START, MENTION_END]})
 
     context_tokens = data_utils.get_context_window(
         char_spans=char_spans,
@@ -102,7 +98,6 @@ def pretty_print(ent_data, prob, score):
     print(f"text:{' '.join(ent_data['description'].split(' ')[:150])}")
 
 
-
 LOGGING_FORMAT = "timestamp=%(asctime)s level=%(levelname)s name=%(name)s message=%(message)s"
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.INFO)
 logger = logging.getLogger("nerdApp")
@@ -128,7 +123,7 @@ def predict(payload: NerdInput) -> List[Dict]:
         res["indices"] = res["indices"][0].tolist()
         res["scores"] = res["scores"][0].tolist()
         del res["data_id"]
-        
+
         result = []
 
         # return response to user
@@ -136,13 +131,14 @@ def predict(payload: NerdInput) -> List[Dict]:
             pretty_print(entity_cache[eid], prob, score)
             result.append(
                 {
-                "neighbor": entity_cache[eid],
-                "prob": prob,
-                "score": score
-             }
+                    "neighbor": entity_cache[eid],
+                    "prob": prob,
+                    "score": score
+                }
             )
 
     return result
+
 
 if __name__ == "__main__":
     import uvicorn

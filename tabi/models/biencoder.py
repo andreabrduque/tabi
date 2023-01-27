@@ -44,6 +44,7 @@ class Biencoder(nn.Module):
 
         self.entity_embs = None
         if entity_emb_path is not None:
+            logger.info(f"Encoder dimensions {self.dim}")
             entity_embs = np.memmap(entity_emb_path, dtype="float32", mode="r").reshape(
                 -1, self.dim
             )
